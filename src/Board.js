@@ -25,10 +25,11 @@ const Cell = styled.span`
   font-size: 20px;
 
   transition: background-color 300ms ease-in;
-  background: ${props =>
+  background: ${(props) =>
     props.color ||
-    `radial-gradient(rgba(0, 220, 255, ${props.potentialFlips /
-      4}), rgba(0,0,0,0))`};
+    `radial-gradient(rgba(0, 220, 255, ${
+      props.potentialFlips / 4
+    }), rgba(0,0,0,0))`};
 
   &:before {
     content: "";
@@ -43,90 +44,66 @@ const BoardWrapper = styled.div`
   max-width: 700px;
 `;
 
-export default class Board extends React.Component {
-  state = {
-    currentPlayer: "white",
-    pieces: {
-      ...STARTING_PIECES
-    },
-    showHints: false
-  };
-  toggleShowHints = event =>
-    this.setState(state => ({ showHints: !state.showHints }));
-  onClickSlot = (x, y) => event => {
-    if (!isValidMove(this.state.pieces, { x, y })) {
-      return;
-    }
+export default function Board() {
+  const [currentPlayer, setCurrentPlayer] = React.useState("white");
+  const [pieces, setPieces] = React.useState({ ...STARTING_PIECES });
+  const [showHints, setShowHints] = React.useState(false);
 
-    const flips = computeFlips(
-      this.state.pieces,
-      { x, y },
-      this.state.currentPlayer
-    );
+  const toggleShowHints = (event) => setShowHints(!showHints);
 
-    const changes = flips.reduce((prev, next) => {
-      prev[`${next.x},${next.y}`] = this.state.currentPlayer;
-      return prev;
-    }, {});
-
-    this.setState(
-      {
-        pieces: {
-          ...this.state.pieces,
-          ...changes,
-          [`${x},${y}`]: this.state.currentPlayer
-        },
-        currentPlayer: this.state.currentPlayer === "white" ? "black" : "white"
-      },
-      () => {
-        const winner = computeWinner(this.state.pieces);
-        console.log("WINNER", winner);
-        if (winner) {
-          this.showGameOver(winner);
-        }
-      }
-    );
-  };
-  showGameOver = winner => {
+  const showGameOver = (winner) => {
     setTimeout(() => {
       alert(`GAME OVER. The winner is ${winner}`);
       window.location.reload();
     }, 2000);
   };
-  render() {
-    return (
-      <BoardWrapper>
-        <Scoreboard
-          currentPlayer={this.state.currentPlayer}
-          pieces={this.state.pieces}
-        />
-        {BOARD.map((row, x) => (
-          <Row key={x}>
-            {row.map((val, y) => {
-              const color = this.state.pieces[`${x},${y}`];
-              return (
-                <Cell
-                  onClick={this.onClickSlot(x, y)}
-                  key={y}
-                  color={color}
-                  potentialFlips={
-                    this.state.showHints &&
-                    computeFlips(
-                      this.state.pieces,
-                      { x, y },
-                      this.state.currentPlayer
-                    ).length
-                  }
-                />
-              );
-            })}
-          </Row>
-        ))}
-        <Settings
-          showHints={this.state.showHints}
-          toggleShowHints={this.toggleShowHints}
-        />
-      </BoardWrapper>
-    );
-  }
+
+  React.useEffect(() => {
+    const winner = computeWinner(pieces);
+    console.log({ winner });
+    if (winner) {
+      showGameOver(winner);
+    }
+  }, [pieces]);
+
+  const onClickSlot = (x, y) => (event) => {
+    if (!isValidMove(pieces, { x, y })) {
+      return;
+    }
+
+    const flips = computeFlips(pieces, { x, y }, currentPlayer);
+
+    const changes = flips.reduce((prev, next) => {
+      prev[`${next.x},${next.y}`] = currentPlayer;
+      return prev;
+    }, {});
+
+    setPieces({ ...pieces, ...changes, [`${x},${y}`]: currentPlayer });
+    setCurrentPlayer(currentPlayer === "white" ? "black" : "white");
+  };
+
+  return (
+    <BoardWrapper>
+      <Scoreboard currentPlayer={currentPlayer} pieces={pieces} />
+      {BOARD.map((row, x) => (
+        <Row key={x}>
+          {row.map((val, y) => {
+            const color = pieces[`${x},${y}`];
+            return (
+              <Cell
+                onClick={onClickSlot(x, y)}
+                key={y}
+                color={color}
+                potentialFlips={
+                  showHints &&
+                  computeFlips(pieces, { x, y }, currentPlayer).length
+                }
+              />
+            );
+          })}
+        </Row>
+      ))}
+      <Settings showHints={showHints} toggleShowHints={toggleShowHints} />
+    </BoardWrapper>
+  );
 }

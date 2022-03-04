@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 const SettingsWrapper = styled.div`
   margin-top: 2vh;
+  color: snow;
 `;
 
 export default ({ showHints, toggleShowHints }) => (
